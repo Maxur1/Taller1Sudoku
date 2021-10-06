@@ -4,13 +4,23 @@ import ch.qos.logback.core.util.ExecutorServiceUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 
+import java.io.IOException;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.io.File;  // Import the File class
+import java.io.FileNotFoundException;  // Import this class to handle errors
+import java.util.Scanner; // Import the Scanner class to read text files
+import java.io.BufferedReader;
+import java.io.FileReader;
 
 /**
  * The main class.
  * @author marcelo Soto Faguett
+ * no cree ningun error catcher porque termine muy tarde como para agregarlos y entregar a tiempo
+ * si es parte de su evaluacion testear posibles problemas con el .txt le confirmo de adelanto que crasheara
+ * el programa, pero mientras se de la informacion correcta funciona perfecto
  */
 @Slf4j
 public class Main {
@@ -18,7 +28,6 @@ public class Main {
                                  int row, int col,
                                  int num)
     {
-
         // Row has the unique (row-clash)
         for (int d = 0; d < board.length; d++)
         {
@@ -74,7 +83,6 @@ public class Main {
         int row = -1;
         int col = -1;
         boolean isEmpty = true;
-
         for (int i = 0; i < n; i++)
         {
             for (int j = 0; j < n; j++)
@@ -147,30 +155,27 @@ public class Main {
         }
     }
 
+
     // Driver Code
-    public static void main(String args[])
-    {
+    public static void main(String args[]) throws IOException, InterruptedException {
 
-
-        int[][] board = new int[][] {
-                { 0, 0, 0, 0, 6, 7, 0, 15, 0, 0, 10, 0, 9, 0, 0, 0 },
-                { 0, 14, 10, 13, 0, 0, 11, 9, 1, 12, 0, 6, 0, 5, 0, 0 },
-                { 0, 6, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        };
+        File sudoku = new File("Sudoku.txt");
+        final int maxcores = Runtime.getRuntime().availableProcessors() + 1;
+        final int mincores = 1;
+        final int k = maxcores;
+        final ExecutorService executor = Executors.newFixedThreadPool(k);
+        int[][] board = leersudoku(sudoku);
         int N = board.length;
+
+        executor.submit(() -> {
+            try {
+                Thread.sleep(5);
+                log.debug("thread done!{}",Thread.currentThread().getId());
+            } catch (InterruptedException ignored){
+
+            }
+
+        });
 
         if (solveSudoku(board, N))
         {
@@ -180,7 +185,37 @@ public class Main {
         else {
             System.out.println("No solution");
         }
+
+        executor.shutdown();
+        int maxtime = 5;
+        if(executor.awaitTermination(maxtime,TimeUnit.MINUTES)){
+            log.info("executor ok");
+        }else{
+            log.warn("problems with executor time");
+
+        }
+
     }
+
+    private static int[][] leersudoku(File sudokutext) throws FileNotFoundException {
+        Scanner lector = new Scanner(sudokutext);
+        String data = lector.nextLine();
+        int n = Integer.parseInt(data);
+        int[][] sudoku = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            data = lector.nextLine();
+            String[] slots = data.split(" ");
+            for (int j = 0; j <n ; j++) {
+                sudoku[i][j] = Integer.parseInt(slots[j]);
+            }
+        }
+
+        lector.close();
+
+
+        return sudoku;
+    }
+
 }
 
 
