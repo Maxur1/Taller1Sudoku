@@ -24,38 +24,34 @@ import java.io.FileReader;
  */
 @Slf4j
 public class Main {
+    //el codigo para revisar si el numero que intentamos usar es valido
     public static boolean isSafe(int[][] board,
                                  int row, int col,
                                  int num)
     {
-        // Row has the unique (row-clash)
+        // viaja a lo largo de toda la fila
         for (int d = 0; d < board.length; d++)
         {
 
-            // Check if the number we are trying to
-            // place is already present in
-            // that row, return false;
+            // regresa falso si encuentra el numero que intentamos poner
             if (board[row][d] == num) {
                 return false;
             }
         }
 
-        // Column has the unique numbers (column-clash)
+        // viaja a lo largo de toda la columna
         for (int r = 0; r < board.length; r++)
         {
 
-            // Check if the number
-            // we are trying to
-            // place is already present in
-            // that column, return false;
+            // retorna falso si encuentra el numero que intentamos hubicar en la columna
             if (board[r][col] == num)
             {
                 return false;
             }
         }
 
-        // Corresponding square has
-        // unique number (box-clash)
+        // revisa si el cuadrado respectivo tiene el numero
+        //empiezo consiguiendome las cordenadas del cuadrado usando el largo del sudoku
         int sqrt = (int)Math.sqrt(board.length);
         int boxRowStart = row - row % sqrt;
         int boxColStart = col - col % sqrt;
@@ -66,6 +62,7 @@ public class Main {
             for (int d = boxColStart;
                  d < boxColStart + sqrt; d++)
             {
+                //otra vez, retorna falso si encuentra el numero
                 if (board[r][d] == num)
                 {
                     return false;
@@ -73,16 +70,18 @@ public class Main {
             }
         }
 
-        // if there is no clash, it's safe
+        // si no encontro el numero significa que es una entrada valida
         return true;
     }
 
+    //resolviendo el sudoku con backtracking
     public static boolean solveSudoku(
             int[][] board, int n)
     {
         int row = -1;
         int col = -1;
         boolean isEmpty = true;
+        //reviso toda la matriz para ver si quedan espacios vacios
         for (int i = 0; i < n; i++)
         {
             for (int j = 0; j < n; j++)
@@ -92,8 +91,7 @@ public class Main {
                     row = i;
                     col = j;
 
-                    // We still have some remaining
-                    // missing values in Sudoku
+                    // el sudoku no esta completado
                     isEmpty = false;
                     break;
                 }
@@ -103,26 +101,28 @@ public class Main {
             }
         }
 
-        // No empty space left
+        // si no quedan espacios vacios termino
         if (isEmpty)
         {
             return true;
         }
 
-        // Else for each-row backtrack
+        // si quedan espacios vacios empiezo a revisarel espacio vacio
+        //el siguiente for checkea todos los numeros usables (maximo siendo el largo del sudoku)
         for (int num = 1; num <= n; num++)
         {
+            //cada numero se revisa si es que es valido o no dependiendo de los numeros actualmente en el sudoku
             if (isSafe(board, row, col, num))
             {
                 board[row][col] = num;
                 if (solveSudoku(board, n))
                 {
-                    // print(board, n);
+                    // agrego el numero al sudoku en ese lugar (board, n);
                     return true;
                 }
                 else
                 {
-                    // replace it
+                    // si me da problemas vuelvo a vaciar el espacio
                     board[row][col] = 0;
                 }
             }
@@ -130,11 +130,11 @@ public class Main {
         return false;
     }
 
+    //para facilitarme imprimir el sudoku
     public static void print(
             int[][] board, int N)
     {
 
-        // We got the answer, just print it
         for (int r = 0; r < N; r++)
         {
             for (int d = 0; d < N; d++)
@@ -156,47 +156,29 @@ public class Main {
     }
 
 
-    // Driver Code
+    // main
     public static void main(String args[]) throws IOException, InterruptedException {
 
         File sudoku = new File("Sudoku.txt");
-        final int maxcores = Runtime.getRuntime().availableProcessors() + 1;
-        final int mincores = 1;
-        final int k = maxcores;
-        final ExecutorService executor = Executors.newFixedThreadPool(k);
+
         int[][] board = leersudoku(sudoku);
         int N = board.length;
 
-        executor.submit(() -> {
-            try {
-                Thread.sleep(5);
-                log.debug("thread done!{}",Thread.currentThread().getId());
-            } catch (InterruptedException ignored){
-
-            }
-
-        });
 
         if (solveSudoku(board, N))
         {
-            // print solution
+            // imprimo solucion
             print(board, N);
         }
         else {
+            //no se lleno
             System.out.println("No solution");
         }
 
-        executor.shutdown();
-        int maxtime = 5;
-        if(executor.awaitTermination(maxtime,TimeUnit.MINUTES)){
-            log.info("executor ok");
-        }else{
-            log.warn("problems with executor time");
-
-        }
 
     }
 
+    //el codigo para leer el archivo texto
     private static int[][] leersudoku(File sudokutext) throws FileNotFoundException {
         Scanner lector = new Scanner(sudokutext);
         String data = lector.nextLine();
