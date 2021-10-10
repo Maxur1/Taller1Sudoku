@@ -18,9 +18,7 @@ import java.io.FileReader;
 /**
  * The main class.
  * @author marcelo Soto Faguett
- * no cree ningun error catcher porque termine muy tarde como para agregarlos y entregar a tiempo
- * si es parte de su evaluacion testear posibles problemas con el .txt le confirmo de adelanto que crasheara
- * el programa, pero mientras se de la informacion correcta funciona perfecto
+ *
  */
 @Slf4j
 public class Main {
@@ -162,7 +160,21 @@ public class Main {
         File sudoku = new File("Sudoku.txt");
 
         int[][] board = leersudoku(sudoku);
+        if(board[0][0] < 0){
+            return;
+        }
         int N = board.length;
+
+        if(N < 4){
+            System.out.print("the number of the sudoku size is not valid");
+            System.out.print("it must be a NUMBER bigger than 3 with a square root");
+            return;
+        }
+        if (Math.sqrt(N)% 1 != 0){
+            System.out.print("the number of the sudoku size is not valid,");
+            System.out.print("it must be a number with a square root");
+            return;
+        }
 
 
         if (solveSudoku(board, N))
@@ -172,7 +184,7 @@ public class Main {
         }
         else {
             //no se lleno
-            System.out.println("No solution");
+            System.out.println("No solution Found");
         }
 
 
@@ -182,15 +194,29 @@ public class Main {
     private static int[][] leersudoku(File sudokutext) throws FileNotFoundException {
         Scanner lector = new Scanner(sudokutext);
         String data = lector.nextLine();
-        int n = Integer.parseInt(data);
-        int[][] sudoku = new int[n][n];
-        for (int i = 0; i < n; i++) {
-            data = lector.nextLine();
-            String[] slots = data.split(" ");
-            for (int j = 0; j <n ; j++) {
-                sudoku[i][j] = Integer.parseInt(slots[j]);
-            }
+        int n;
+        try {
+            n = Integer.parseInt(data);
+        } catch (NumberFormatException e) {
+            n = 0;
         }
+        int[][] sudoku = new int[n][n];
+        try{
+            for (int i = 0; i < n; i++) {
+                data = lector.nextLine();
+                String[] slots = data.split(" ");
+                for (int j = 0; j <n ; j++) {
+                    sudoku[i][j] = Integer.parseInt(slots[j]);
+                }
+            }
+        } catch (Exception e) {
+            System.out.print("there is an error in the sudoku format");
+            System.out.print("Basic requirements to check:");
+            System.out.print("everything must be numbers");
+            System.out.print("the first number must be the length of the sudoku");
+            sudoku [0][0] = -2;
+        }
+
 
         lector.close();
 
