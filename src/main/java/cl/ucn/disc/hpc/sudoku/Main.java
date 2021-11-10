@@ -5,13 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 
 import java.io.IOException;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.io.File;  // Import the File class
 import java.io.FileNotFoundException;  // Import this class to handle errors
-import java.util.Scanner; // Import the Scanner class to read text files
 import java.io.BufferedReader;
 import java.io.FileReader;
 
@@ -76,6 +75,7 @@ public class Main {
     public static boolean solveSudoku(
             int[][] board, int n)
     {
+
         int row = -1;
         int col = -1;
         boolean isEmpty = true;
@@ -158,6 +158,8 @@ public class Main {
     public static void main(String args[]) throws IOException, InterruptedException {
 
         File sudoku = new File("Sudoku.txt");
+        final int maxCores = Runtime.getRuntime().availableProcessors() + 1;
+        final int minCores = 1;
 
         int[][] board = leersudoku(sudoku);
         if(board[0][0] < 0){
@@ -175,17 +177,38 @@ public class Main {
             System.out.print("it must be a number with a square root");
             return;
         }
+        //creo un sudoku clon para guardar copia
+        int[][] board2 = new int[N][N];
+        clonarsudoku(board,board2);
+        final int Repeticiones = 5;
+        for (int n = minCores; n <= maxCores; n++) {
 
 
-        if (solveSudoku(board, N))
-        {
-            // imprimo solucion
-            print(board, N);
+            List<Long> times = new ArrayList<>();
+            for (int m = 1; m <= Repeticiones; m++) {
+                //reseteo el sudoku para que se pueda re-completar
+                clonarsudoku(board2,board);
+                long time = sudokuMultipleCores(n, board);
+                times.add(time);
+
+            }
+
+            long min = Collections.min(times);
+            long max = Collections.max(times);
+
+            //Erase two non-characteristic values
+            times.remove(min);
+            times.remove(max);
+
+
+            //Get the average with stream magic!
+            double average = times.stream().mapToLong((x) -> x).average().getAsDouble();
+            log.info("Average time with {} cores: {} nano sec. Max time: {} nano sec. Min time: {} nano sec.", n, average, max, min);
+
+            //Print the board with the solution
+            print(board,N);
         }
-        else {
-            //no se lleno
-            System.out.println("No solution Found");
-        }
+
 
 
     }
@@ -222,6 +245,49 @@ public class Main {
 
 
         return sudoku;
+    }
+
+    private static void clonarsudoku(int[][] sudoku1,int[][]sudoku2){
+        for (int i = 0; i < sudoku1.length; i++) {
+            for (int j = 0; j < sudoku1.length; j++) {
+                sudoku2[i][j] = sudoku1[i][j];
+            }
+
+        }
+        return;
+    }
+    private static long sudokuMultipleCores(int cores, int[][] board1) throws InterruptedException {
+
+        final ExecutorService executorService = Executors.newFixedThreadPool(cores);
+
+
+        StopWatch sw = StopWatch.createStarted();
+        executorService.submit(() -> {
+            if (solveSudoku(board1, board1.length))
+            {
+                // imprimo solucion
+                System.out.println("");
+                print(board1, board1.length);
+            }
+            else {
+                //no se lleno
+                System.out.println("No solution Found");
+            }
+
+
+        });
+        executorService.shutdown();
+        long time = sw.getTime(TimeUnit.NANOSECONDS);
+        int maxTime = 5;
+
+        if (executorService.awaitTermination(maxTime, TimeUnit.MINUTES)) {
+            //log.info("Founded a solution! with a time of {} ms:",time);
+        } else {
+            log.warn("The executor didn't finish in {} minutes", maxTime);
+        }
+        return time;
+
+
     }
 
 }
